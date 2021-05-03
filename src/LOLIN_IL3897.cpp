@@ -197,9 +197,10 @@ LOLIN_IL3897::LOLIN_IL3897(int width, int height, int8_t SID, int8_t SCLK, int8_
     }
 
     bw_buf = (uint8_t *)malloc(width * _height_8bit / 8);
-    red_buf = (uint8_t *)malloc(width * _height_8bit / 8);
+    //red_buf = (uint8_t *)malloc(width * _height_8bit / 8);
+    red_buf = NULL;
     bw_bufsize = width * _height_8bit / 8;
-    red_bufsize = bw_bufsize;
+    red_bufsize = 0;
 }
 
 LOLIN_IL3897::LOLIN_IL3897(int width, int height, int8_t DC, int8_t RST, int8_t CS, int8_t BUSY) : LOLIN_EPD(width, height, DC, RST, CS, BUSY)
@@ -215,9 +216,10 @@ LOLIN_IL3897::LOLIN_IL3897(int width, int height, int8_t DC, int8_t RST, int8_t 
     }
 
     bw_buf = (uint8_t *)malloc(width * _height_8bit / 8);
-    red_buf = (uint8_t *)malloc(width * _height_8bit / 8);
+    //red_buf = (uint8_t *)malloc(width * _height_8bit / 8);
+    red_buf = NULL;
     bw_bufsize = width * _height_8bit / 8;
-    red_bufsize = bw_bufsize;
+    red_bufsize = 0;   
 }
 
 /**************************************************************************/
@@ -302,8 +304,8 @@ void LOLIN_IL3897::display()
 void LOLIN_IL3897::update()
 {
     sendCmd(0x22);
-    sendData(0xC7);
-    sendCmd(0x20);
+    sendData(0xC7);  // enable Osc, Analog; Display; then disable Analog, Osc.
+    sendCmd(0x20);  //activate Display Update Sequence
     readBusy();
 }
 
@@ -345,7 +347,7 @@ void LOLIN_IL3897::drawPixel(int16_t x, int16_t y, uint16_t color)
     // uint16_t addr = (x * height() + y) / 8;
     uint16_t addr = (x * _height_8bit + y) / 8;
 
-    if (color == EPD_RED)
+    if ((color == EPD_RED) && (NULL != red_buf))
     {
         pBuf = red_buf + addr;
     }
@@ -382,10 +384,22 @@ void LOLIN_IL3897::clearBuffer()
 
 /**************************************************************************/
 /*!
-    @brief clear the display twice to remove any spooky ghost images
+    @brief clear the display once
 */
 /**************************************************************************/
 void LOLIN_IL3897::clearDisplay()
+{
+    clearBuffer();
+    display();
+
+}
+
+/**************************************************************************/
+/*!
+    @brief clear the display twice to remove any spooky ghost images
+*/
+/**************************************************************************/
+void LOLIN_IL3897::clearDisplay2x()
 {
     clearBuffer();
     display();
@@ -400,12 +414,13 @@ void LOLIN_IL3897::readBusy()
         while (1)
         {
             if (digitalRead(busy) == 0)
-                break;
+            {   break;
+            }else   //yield briefly to avoid waking watchdog
+            {   delay(1);
+            }
         }
-    }
-    else
-    {
-        delay(BUSY_WAIT);
+    } else {
+      delay(BUSY_WAIT);
     }
 }
 
