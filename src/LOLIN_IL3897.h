@@ -32,6 +32,7 @@ class LOLIN_IL3897 : public LOLIN_EPD {
 	
 	void clearBuffer();
 	void clearDisplay();
+	void clearDisplay2x();
 
 	void deepSleep();
 
